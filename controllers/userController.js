@@ -2,10 +2,10 @@ const User = require('../models/User.js');
 
 // POST /api/users - Opprett en ny bruker
 const createUser = async (req, res) => {
-    const { username, email, password } = req.body;
+    const { username, email } = req.body;
 
-    if (!username || !email || !password) {
-        return res.status(400).json({ message: 'Brukenavn, mail, og passord er påkrevd' });
+    if (!username || !email) { // Oppdatert validering fjernet passord
+        return res.status(400).json({ message: 'Brukenavn og mail er påkrevd' });
     }
 
     try {
@@ -19,13 +19,13 @@ const createUser = async (req, res) => {
             }
         }
 
-        const newUserPayload = { username, email, password };
+        const newUserPayload = { username, email }; // Fjernet password herfra
 
         const user = new User(newUserPayload);
         await user.save();
 
         const userResponse = user.toObject();
-        delete userResponse.password;
+        // delete userResponse.password;    // Fjernet passord fra responsen
 
         res.status(201).json(userResponse);
     } catch (error) {

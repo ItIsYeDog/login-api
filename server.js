@@ -17,7 +17,7 @@ app.use(express.json());
 
 // Ruter
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/', userRoutes);
 
 // Error hånderting
 app.use((err, req, res, next) => {
