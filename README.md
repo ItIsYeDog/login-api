@@ -1,14 +1,13 @@
-# Enkel Bruker-API med Autentisering
+# Bruker-API (Eksamensdel)
 
-Dette prosjektet er et enkelt RESTful API bygget med Node.js, Express og MongoDB for å håndtere brukere og autentisering ved hjelp av JSON Web Tokens (JWT).
+Dette prosjektet implementerer kjernefunksjonalitet for et RESTful API bygget med Node.js, Express og MongoDB. Fokus er på å håndtere brukere med feltene brukernavn og e-post, i henhold til spesifikke krav.
 
-## Funksjonalitet
+## Funksjonalitet (Eksamensdel)
 
-*   Brukerregistrering
-*   Brukerinnlogging med JWT
-*   CRUD-operasjoner for brukere (Create, Read, Update, Delete)
-*   Rollebasert tilgangskontroll (bruker, admin)
-*   Beskyttede ruter
+*   Opprettelse av nye brukere med brukernavn og e-post.
+*   Henting av brukerdata basert på brukernavn.
+*   Validering av input-data (unikhet for brukernavn og e-post, e-postformat).
+*   RESTful feilhåndtering.
 
 ## Forutsetninger
 
@@ -45,10 +44,9 @@ Før du kan kjøre applikasjonen, må du sette opp miljøvariabler.
     # Din MongoDB tilkoblingsstreng
     MONGODB_URI=mongodb://localhost:27017/eksamen-loginapi
 
-    # En sterk, hemmelig nøkkel for JWT-signering
+    # JWT Secret (selv om token ikke brukes for disse spesifikke rutene, kan den være i bruk andre steder)
     JWT_SECRET=din_super_hemmelige_jwt_nokkel_her
     ```
-    **Viktig:** Bytt ut `din_super_hemmelige_jwt_nokkel_her` med en lang, tilfeldig og unik streng for produksjonsmiljøer.
 
 ## Kjøre Applikasjonen
 
@@ -63,117 +61,73 @@ Før du kan kjøre applikasjonen, må du sette opp miljøvariabler.
     ```
     Serveren skal nå kjøre på porten du spesifiserte i `.env`-filen (standard er `http://localhost:3000`).
 
-## API Endepunkter
+## User Model
+
+Modellen "User" er definert med følgende kjernefelter for denne oppgavedelen:
+*   `username`: (String) Påkrevd og unikt.
+*   `email`: (String) Påkrevd, unikt, og må være i et gyldig e-postformat.
+
+## API Endepunkter (Eksamensdel)
 
 Alle endepunkter er prefikset med `/api`.
 
-### Autentisering (`/api/auth`)
-
-*   **`POST /login`**
-    *   **Beskrivelse:** Logger inn en eksisterende bruker.
+*   **`POST /api/createUser`**
+    *   **Beskrivelse:** Oppretter en ny bruker. Data mottas som JSON og valideres.
     *   **Body (JSON):**
         ```json
         {
-            "email": "bruker@example.com",
-            "password": "passord123"
+            "username": "nybrukerEksamen",
+            "email": "nybruker.eksamen@example.com"
         }
         ```
-    *   **Respons (Suksess - 200 OK):**
+    *   **Respons (Suksess - 201 Created):** Returnerer det opprettede brukerobjektet.
         ```json
         {
-            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // JWT token
+            "_id": "unik_mongodb_id",
+            "username": "nybrukerEksamen",
+            "email": "nybruker.eksamen@example.com",
+            "createdAt": "dato_og_tid",
+            "updatedAt": "dato_og_tid",
+            "__v": 0
         }
         ```
     *   **Respons (Feil):**
-        *   `400 Bad Request`: Hvis e-post eller passord mangler.
-        *   `401 Unauthorized`: Hvis e-post eller passord er ugyldig.
+        *   `400 Bad Request`: Hvis `username` eller `email` mangler, eller hvis e-postformatet er ugyldig. Meldingen vil spesifisere feilen (f.eks. "Brukenavn og mail er påkrevd", "Bruk en gyldig e-postadresse").
+        *   `409 Conflict`: Hvis brukernavnet eller e-posten allerede eksisterer. Meldingen vil spesifisere konflikten (f.eks. "Email eksisterer allerede").
 
-### Brukere (`/api/users`)
-
-*   **`POST /`**
-    *   **Beskrivelse:** Oppretter en ny bruker.
-    *   **Body (JSON):**
+*   **`GET /api/:username`**
+    *   **Beskrivelse:** Henter all data (som JSON) for brukeren med det spesifiserte `:username`.
+    *   **URL Parameter:** `:username` - Brukernavnet til brukeren som skal hentes.
+    *   **Respons (Suksess - 200 OK):** Returnerer brukerobjektet.
         ```json
         {
-            "username": "nybruker",
-            "email": "nybruker@example.com",
-            "password": "passord123"
-        }
-        ```
-    *   **Respons (Suksess - 201 Created):** Returnerer det opprettede brukerobjektet (uten passord).
-    *   **Respons (Feil):**
-        *   `400 Bad Request`: Hvis påkrevde felter mangler eller er ugyldige.
-        *   `409 Conflict`: Hvis brukernavn eller e-post allerede eksisterer.
-
-*   **`GET /:username`**
-    *   **Beskrivelse:** Henter data for en spesifikk bruker.
-    *   **Autentisering:** Krever gyldig JWT (`protect` middleware).
-    *   **URL Parameter:** `username` - Brukernavnet til brukeren som skal hentes.
-    *   **Respons (Suksess - 200 OK):** Returnerer brukerobjektet (uten passord).
-    *   **Respons (Feil):**
-        *   `401 Unauthorized`: Hvis token mangler eller er ugyldig.
-        *   `404 Not Found`: Hvis brukeren ikke finnes.
-
-*   **`GET /`**
-    *   **Beskrivelse:** Henter en liste over alle brukernavn.
-    *   **Autentisering:** Krever gyldig JWT (`protect` middleware).
-    *   **Respons (Suksess - 200 OK):**
-        ```json
-        [
-            { "username": "bruker1" },
-            { "username": "bruker2" }
-        ]
-        ```
-    *   **Respons (Feil):**
-        *   `401 Unauthorized`: Hvis token mangler eller er ugyldig.
-
-*   **`PUT /:username`**
-    *   **Beskrivelse:** Oppdaterer informasjon for en spesifikk bruker.
-    *   **Autentisering & Autorisering:** Krever gyldig JWT. Brukeren må enten være eieren av profilen eller en administrator (`protect`, `isOwnerOrAdmin` middleware). Kun administratorer kan endre `role`.
-    *   **URL Parameter:** `username` - Brukernavnet til brukeren som skal oppdateres.
-    *   **Body (JSON - Eksempler på felter som kan oppdateres):**
-        ```json
-        {
-            "email": "ny.epost@example.com",
-            "password": "nyttSikkertPassord",
-            "role": "admin" // Kun hvis den som sender er admin
-        }
-        ```
-    *   **Respons (Suksess - 200 OK):** Returnerer det oppdaterte brukerobjektet (uten passord).
-    *   **Respons (Feil):**
-        *   `400 Bad Request`: Hvis input er ugyldig (f.eks. ugyldig rolle).
-        *   `401 Unauthorized`: Hvis token mangler eller er ugyldig.
-        *   `403 Forbidden`: Hvis brukeren ikke har tillatelse (ikke eier/admin, eller prøver å endre rolle uten å være admin).
-        *   `404 Not Found`: Hvis brukeren ikke finnes.
-        *   `409 Conflict`: Hvis den nye e-posten allerede er i bruk av en annen konto.
-
-*   **`DELETE /:username`**
-    *   **Beskrivelse:** Sletter en spesifikk bruker.
-    *   **Autentisering & Autorisering:** Krever gyldig JWT og at brukeren er administrator (`protect`, `isAdmin` middleware).
-    *   **URL Parameter:** `username` - Brukernavnet til brukeren som skal slettes.
-    *   **Respons (Suksess - 200 OK):**
-        ```json
-        {
-            "message": "Bruker 'brukernavn' slettet"
+            "_id": "unik_mongodb_id",
+            "username": "nybrukerEksamen",
+            "email": "nybruker.eksamen@example.com",
+            "createdAt": "dato_og_tid",
+            "updatedAt": "dato_og_tid",
+            "__v": 0
         }
         ```
     *   **Respons (Feil):**
-        *   `401 Unauthorized`: Hvis token mangler eller er ugyldig.
-        *   `403 Forbidden`: Hvis brukeren ikke er administrator.
-        *   `404 Not Found`: Hvis brukeren ikke finnes.
+        *   `404 Not Found`: Hvis brukeren med det angitte brukernavnet ikke finnes. Melding: "Bruker ikke funnet".
+        *   `500 Internal Server Error`: Ved andre serverfeil.
 
 ## Testing
 
-API-endepunktene kan testes med verktøy som Postman eller Thunder Client (for VS Code). Husk å:
-1.  Først registrere en bruker.
-2.  Deretter logge inn for å få et JWT-token.
-3.  Inkludere JWT-tokenet i `Authorization`-headeren for beskyttede ruter (Format: `Bearer <ditt_token_her>`).
+API-endepunktene kan testes med verktøy som Postman eller Thunder Client (for VS Code).
 
-## Middleware
+1.  **For `POST /api/createUser`:**
+    *   Sett metoden til `POST`.
+    *   URL: `http://localhost:3000/api/createUser`
+    *   Body: Velg `raw` og `JSON`, og legg inn brukerdata som vist over.
+    *   Send forespørselen og observer responsen.
 
-Applikasjonen benytter seg av flere middleware-funksjoner for å håndtere autentisering og autorisasjon:
-*   **`protect`**: Verifiserer JWT og legger brukerdata til `req.user`.
-*   **`isAdmin`**: Sjekker om den autentiserte brukeren har rollen 'admin'.
-*   **`isOwnerOrAdmin`**: Sjekker om den autentiserte brukeren er eieren av den aktuelle ressursen eller en administrator.
+2.  **For `GET /api/:username`:**
+    *   Sett metoden til `GET`.
+    *   URL: `http://localhost:3000/api/{et_eksisterende_brukernavn}`
+    *   Send forespørselen og observer responsen.
 
-Disse middleware-funksjonene sikrer at kun autoriserte brukere kan få tilgang til eller modifisere spesifikke data.
+## Andre API-endepunkter
+
+Dette prosjektet inneholder også andre API-endepunkter relatert til brukerhåndtering og autentisering (f.eks. innlogging, oppdatering/sletting av brukere med token-beskyttelse, henting av alle brukernavn). Disse er ikke hovedfokus for denne spesifikke oppgavebeskrivelsen, men er tilgjengelige i koden for en mer komplett brukeradministrasjonsløsning.
