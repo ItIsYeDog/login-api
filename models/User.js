@@ -31,7 +31,7 @@ const UserSchema = new mongoose.Schema({
     // },
 }, { timestamps: true });
 
-// Pre-save hook til å hashe passordet før lagring - MÅ FJERNES ELLER KOMMENTERES UT
+// Pre-save hook til å hashe passordet før lagring
 // UserSchema.pre('save', async function (next) {
 //     if (!this.isModified('password')) {
 //         return next();
@@ -45,7 +45,7 @@ const UserSchema = new mongoose.Schema({
 //     }
 // });
 
-// Metode for å sammenligne passord - MÅ FJERNES ELLER KOMMENTERES UT
+// Metode for å sammenligne passord
 // UserSchema.methods.comparePassword = async function (candidatePassword) {
 //     return bcrypt.compare(candidatePassword, this.password);
 // };

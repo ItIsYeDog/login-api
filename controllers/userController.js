@@ -38,7 +38,7 @@ const createUser = async (req, res) => {
     }
 };
 
-// GET /api/users/:username - Hent data for én spesifikk bruker
+// GET /api/:username - Hent data for én spesifikk bruker
 const getUserByUsername = async (req, res) => {
     try {
         const user = await User.findOne({ username: req.params.username }).select('-password');
